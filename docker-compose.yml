@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: chess-db
+    environment:
+      POSTGRES_DB: chess_db
+      POSTGRES_USER: chess_user
+      POSTGRES_PASSWORD: chess_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - chess-network
+
+  # Redis Cache (Optional)
+  redis:
+    image: redis:7-alpine
+    container_name: chess-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - chess-network
+
+  # Backend API (.NET)
+  api:
+    build:
+      context: ./src/backend
+      dockerfile: Dockerfile
+    container_name: chess-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=chess_db;Username=chess_user;Password=chess_password
+      - Redis__ConnectionString=redis:6379
+    ports:
+      - "5000:80"
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - chess-network
+    volumes:
+      - ./src/backend:/app
+      - /app/bin
+      - /app/obj
+
+  # Frontend (Vue + TypeScript)
+  frontend:
+    build:
+      context: ./src/frontend
+      dockerfile: Dockerfile
+    container_name: chess-frontend
+    environment:
+      - VITE_API_URL=http://localhost:5000
+    ports:
+      - "5173:5173"
+    depends_on:
+      - api
+    networks:
+      - chess-network
+    volumes:
+      - ./src/frontend:/app
+      - /app/node_modules
+
+volumes:
+  postgres_data:
+
+networks:
+  chess-network:
+    driver: bridge
