@@ -1,2 +1,13 @@
-# Ignore Visual Studio configuration
+# Visual Studio / IDE
 .vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build outputs
+[Bb]in/
+[Oo]bj/
+artifacts/
+publish/
+TestResults/

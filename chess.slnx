@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="lib/ml/mlmath/mlmath.csproj" />
+  <Project Path="test/ml/mlmathtest/mlmathtest.csproj" />
+</Solution>
