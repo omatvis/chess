@@ -174,5 +174,86 @@ namespace mlmathtest
             Assert.Single(result);
             Assert.Equal(1f, result[0], 5);
         }
+
+        // --- Tests for TopKStrict and TopKClamp (selected code) ---
+
+        [Fact]
+        public void TopKStrict_Throws_WhenScoreGreaterThanLength()
+        {
+            // Arrange
+            float[] logits = new float[] { 1f, 2f, 3f };
+
+            // Act & Assert
+            Assert.Throws<ArgumentOutOfRangeException>(() => MathHelper.TopKStrict(logits, 4f));
+        }
+
+        [Theory]
+        [InlineData(0f)]
+        [InlineData(-1f)]
+        public void TopKStrict_Throws_OnNonPositiveScore(float score)
+        {
+            // Arrange
+            float[] logits = new float[] { 1f, 2f, 3f };
+
+            // Act & Assert
+            Assert.Throws<ArgumentOutOfRangeException>(() => MathHelper.TopKStrict(logits, score));
+        }
+
+        [Fact]
+        public void TopKStrict_ReturnsTopK_ByFrequencyThenByValue()
+        {
+            // Arrange - example from comment in source
+            float[] logits = new float[] { 3f, 1f, 4f, 4f, 5f, 2f, 6f, 1f };
+            float score = 2f;
+            float[] expected = new float[] { 4f, 1f };
+
+            // Act
+            float[] actual = MathHelper.TopKStrict(logits, score);
+
+            // Assert
+            Assert.Equal(expected, actual);
+        }
+
+        [Fact]
+        public void TopKClamp_ReturnsOriginalLogits_WhenScoreGreaterThanLength()
+        {
+            // Arrange
+            float[] logits = new float[] { 1f, 2f, 3f };
+            float score = 5f;
+
+            // Act
+            float[] actual = MathHelper.TopKClamp(logits, score);
+
+            // Current implementation returns the original logits array when score > logits.Length.
+            // Assert that behavior is preserved (documenting current behavior).
+            Assert.Same(logits, actual);
+        }
+
+        [Theory]
+        [InlineData(0f)]
+        [InlineData(-2f)]
+        public void TopKClamp_Throws_OnNonPositiveScore(float score)
+        {
+            // Arrange
+            float[] logits = new float[] { 1f, 2f, 2f };
+
+            // Act & Assert
+            Assert.Throws<ArgumentOutOfRangeException>(() => MathHelper.TopKClamp(logits, score));
+        }
+
+        [Fact]
+        public void TopKClamp_ReturnsTopK_ByFrequencyThenByValue()
+        {
+            // Arrange - same example as TopKStrict
+            float[] logits = new float[] { 3f, 1f, 4f, 4f, 5f, 2f, 6f, 1f };
+            float score = 2f;
+            float[] expected = new float[] { 4f, 1f };
+
+            // Act
+            float[] actual = MathHelper.TopKClamp(logits, score);
+
+            // Assert
+            Assert.Equal(expected, actual);
+        }
     }
 }

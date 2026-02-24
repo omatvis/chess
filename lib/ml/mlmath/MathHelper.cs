@@ -1,4 +1,7 @@
-﻿namespace mlmath
+﻿using System.Diagnostics;
+using System.Runtime.Intrinsics.X86;
+
+namespace mlmath
 {
     public static class MathHelper
     {
@@ -66,5 +69,118 @@
                 logits[i] /= sumLogits;
             return logits;
         }
+
+        public static int ArgMax(float[] logits) {
+            return Array.IndexOf(logits, logits.Max());
+        }
+
+        /// <summary>
+        /// Returns the top-`score` distinct values from the `logits` array ordered by frequency
+        /// (most frequent first) and by numeric value (descending) for ties.
+        /// </summary>
+        /// <param name="logits">
+        /// Array of float values to evaluate. The method counts occurrences of each distinct value.
+        /// This parameter must not be <c>null</c>; a <see cref="NullReferenceException"/> will occur otherwise.
+        /// </param>
+        /// <param name="score">
+        /// The requested number of top distinct values to return. Treated as a count; fractional parts
+        /// are discarded when casting to <see cref="int"/>. If <paramref name="score"/> is greater than
+        /// <c>logits.Length</c> the method implements a "clamp" behavior and returns the original
+        /// <paramref name="logits"/> array unchanged. Must be greater than 0.
+        /// </param>
+        /// <returns>
+        /// An array of distinct float values ordered first by occurrence count (descending) and then
+        /// by numeric value (descending) when counts are equal. The returned length is at most
+        /// <c>Math.Min((int)score, numberOfDistinctValues)</c>.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// Thrown when <paramref name="score"/> &lt;= 0.
+        /// </exception>
+        /// <remarks>
+        /// - The implementation builds a frequency dictionary of distinct values from <paramref name="logits"/>.
+        /// - Duplicate values are collapsed because the dictionary keys represent distinct values.
+        /// - Ordering is done by frequency (descending), then by value (descending) for ties.
+        /// - Callers should validate <paramref name="logits"/> if they wish to avoid a <see cref="NullReferenceException"/>.
+        /// - Because <paramref name="score"/> is a <see cref="float"/>, fractional parts are discarded by the cast to <see cref="int"/>.
+        /// - This method intentionally returns the original <paramref name="logits"/> when <paramref name="score"/> &gt; <c>logits.Length</c>
+        ///   to provide a clamped behavior rather than throwing.
+        /// </remarks>
+        /// <example>
+        /// var logits = new float[] { 1f, 2f, 2f, 3f }; // counts: 2->2, 3->1, 1->1
+        /// var top2 = MathHelper.TopKClamp(logits, 2); // returns new float[] { 2f, 3f }
+        /// </example>
+        public static float[] TopKClamp(float[] logits, float score)
+        {
+
+            if (score > logits.Length) return logits;
+            if (score <= 0) 
+                throw new ArgumentOutOfRangeException(
+                    nameof(score), 
+                    "Score must be greater than 0 and less than or equal to the length of logits.");
+            Dictionary<float, float> occurances = new Dictionary<float, float>();
+            foreach (float element in logits)
+            {
+                if (occurances.ContainsKey(element))
+                    occurances[element]++;
+                else
+                    occurances[element] = 1;
+            }
+
+            return occurances.OrderByDescending(kv => kv.Value)
+                .ThenByDescending(kv => kv.Key)
+                .Take((int)score)
+                .Select(kv => kv.Key)
+                .ToArray();
+        }
+
+        /// <summary>
+        /// Returns the top distinct values from <paramref name="logits"/> ordered by occurrence count (descending)
+        /// and by numeric value (descending) when counts are equal.
+        /// </summary>
+        /// <param name="logits">Array of float values to evaluate. Each distinct value's frequency is counted.</param>
+        /// <param name="score">
+        /// The number of top distinct values to return. The value is treated as a count; fractional parts are discarded
+        /// when casting to <see cref="int"/>. Must be greater than 0 and less than or equal to <c>logits.Length</c>.
+        /// </param>
+        /// <returns>
+        /// An array containing up to <c>(int)score</c> distinct float values selected from <paramref name="logits"/>,
+        /// ordered first by frequency (most frequent first) and then by value (larger values first) for ties.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// Thrown when <paramref name="score"/> &lt;= 0 or when <paramref name="score"/> &gt; <c>logits.Length</c>.
+        /// </exception>
+        /// <remarks>
+        /// - Duplicate values in <paramref name="logits"/> are collapsed because selection is performed over distinct keys.
+        /// - If <paramref name="logits"/> is <c>null</c> a <see cref="NullReferenceException"/> will be thrown by the method.
+        /// - The method returns at most <c>Math.Min((int)score, numberOfDistinctValues)</c> elements.
+        /// </remarks>
+        /// <example>
+        /// var logits = new float[] { 1f, 2f, 2f, 3f }; // counts: 2->2, 3->1, 1->1
+        /// var top2 = MathHelper.TopKStrict(logits, 2); // returns new float[] { 2f, 3f }
+        /// </example>
+        public static float[] TopKStrict(float[] logits, float score)
+        {
+            if (score > logits.Length) 
+                throw new ArgumentOutOfRangeException(
+                    nameof(score), 
+                    "Score must be less than or equal to the length of logits.");
+            if (score <= 0) throw new ArgumentOutOfRangeException(
+                nameof(score), 
+                "Score must be greater than 0.");
+            Dictionary<float, float> occurances = new Dictionary<float, float>();
+            foreach (float element in logits)
+            {
+                if (occurances.ContainsKey(element))
+                    occurances[element]++;
+                else
+                    occurances[element] = 1;
+            }
+            return occurances.OrderByDescending(kv => kv.Value)
+                .ThenByDescending(kv => kv.Key)
+                .Take((int)score)
+                .Select(kv => kv.Key)
+                .ToArray();
+        }
+
     }
 }
