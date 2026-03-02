@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Runtime.Intrinsics.X86;
 
-namespace mlmath
+namespace mlmath.Helper
 {
     public static class MathHelper
     {

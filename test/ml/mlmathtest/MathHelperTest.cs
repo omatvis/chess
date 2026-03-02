@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
 using Xunit;
-using mlmath;
+using mlmath.Helper;
 
 namespace mlmathtest
 {
