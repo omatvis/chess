@@ -1,7 +1,4 @@
-﻿using System.Diagnostics;
-using System.Runtime.Intrinsics.X86;
-
-namespace mlmath.Helper
+﻿namespace mlmath.Helper
 {
     public static class MathHelper
     {

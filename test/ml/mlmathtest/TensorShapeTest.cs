@@ -1,7 +1,4 @@
-﻿using System;
-using System.Linq;
-using Xunit;
-using mlmath.Tensor;
+﻿using mlmath.Tensor;
 
 namespace mlmathtest;
 
